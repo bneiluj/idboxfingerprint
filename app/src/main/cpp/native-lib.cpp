@@ -1,11 +1,14 @@
 #include <jni.h>
 #include <string>
 
+#include <fstream>
+
 extern "C"
 jstring
 Java_doshup_idboxfingerprint_MainActivity_stringFromJNI(
         JNIEnv *env,
         jobject /* this */) {
+
     std::string hello = "Hello from C++";
     return env->NewStringUTF(hello.c_str());
 }
