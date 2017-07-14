@@ -118,4 +118,21 @@ public class ScanActivity extends AppCompatActivity {
         }
     };
 
+//    @Override
+//    protected void isSameFingerprint() {
+//        Array Images = "/path/folder/img";
+//        for (var i in Images) {
+//            int score = 0;
+//            var scoreNew = compareFromCLib(currentFingerprint, Images[i]);
+//            if (scoreNew>score) {
+//
+//            }
+//            if (higherScore>5000) {
+//                //found match!
+//            } else {
+//                // not found - save image inside
+//            }
+//        }
+//    }
+
 }
