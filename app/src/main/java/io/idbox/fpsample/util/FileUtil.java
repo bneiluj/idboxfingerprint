@@ -18,7 +18,7 @@ import io.idbox.fpsample.exception.FileAlreadyExists;
 
 /**
  * File utility
- * Created by USER on 15/07/2017.
+ * Created by IDbox on 15/07/2017.
  */
 
 public class FileUtil {

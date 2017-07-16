@@ -28,6 +28,10 @@ import io.idbox.fpsample.util.ValidatorUtil;
 
 import static android.R.id.message;
 
+/**
+ * Create by IDbox
+ */
+
 public class UserInfoActivity extends AppCompatActivity {
 
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS = 402;

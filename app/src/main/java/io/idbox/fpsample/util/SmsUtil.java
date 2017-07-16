@@ -9,7 +9,7 @@ import com.klinker.android.send_message.Settings;
 import com.klinker.android.send_message.Transaction;
 
 /**
- * Created by USER on 15/07/2017.
+ * Created by IDbox on 15/07/2017.
  */
 
 public class SmsUtil {
