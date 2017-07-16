@@ -1,14 +1,20 @@
-#include <jni.h>
-#include <string>
+/**********************************************************************************************
+This code is part of the code supplied with the OpenCV Blueprints book.
+It was written by Steven Puttemans, who can be contacted via steven.puttemans[at]kuleuven.be
+***********************************************************************************************
+Software for processing fingerprints
+
+USAGE
+./fingerprint_process
+***********************************************************************************************/
 
 #include "opencv2/opencv.hpp"
-#include "xfeatures2d.hpp"
+#include "opencv2/xfeatures2d.hpp"
 #include <fstream>
 
 using namespace std;
 using namespace cv;
 using namespace cv::xfeatures2d;
-
 
 // Perform a single thinning iteration, which is repeated until the skeletization is finalized
 void thinningIteration(Mat& im, int iter)
@@ -47,7 +53,7 @@ void thinningIteration(Mat& im, int iter)
 // Function for thinning any given binary image within the range of 0-255. If not you should first make sure that your image has this range preset and configured!
 void thinning(Mat& im)
 {
-    // Enforce the range tob e in between 0 - 255
+	 // Enforce the range tob e in between 0 - 255
     im /= 255;
 
     Mat prev = Mat::zeros(im.size(), CV_8UC1);
@@ -64,26 +70,11 @@ void thinning(Mat& im)
     im *= 255;
 }
 
-std::string ConvertJString(JNIEnv *env, jstring str) {
-    if (!str) jstring();
-
-    const jsize len = env->GetStringUTFLength(str);
-    const char *strChars = env->GetStringUTFChars(str, (jboolean *) 0);
-
-    std::string Result(strChars, len);
-
-    env->ReleaseStringUTFChars(str, strChars);
-
-    return Result;
-}
-
-int simplemain(string& img1, string& img2)
+int main()
 {
     // Read in an input image - directly in grayscale CV_8UC1
     // This will be our test fingerprint
-//    Mat input = imread("assets/101_1.tif", IMREAD_GRAYSCALE);
-
-    Mat input = imread(img1, IMREAD_GRAYSCALE);
+    Mat input = imread("data/fingerprints/101_1.tif", IMREAD_GRAYSCALE);
 
     // Binarize the image, through local thresholding
     Mat input_binary;
@@ -93,7 +84,7 @@ int simplemain(string& img1, string& img2)
     Mat container(input.rows, input.cols*2, CV_8UC1);
     input.copyTo( container( Rect(0, 0, input.cols, input.rows) ) );
     input_binary.copyTo( container( Rect(input.cols, 0, input.cols, input.rows) ) );
-//    imshow("input versus binary", container); waitKey(0);
+    imshow("input versus binary", container); waitKey(0);
 
     // Now apply the thinning algorithm
     Mat input_thinned = input_binary.clone();
@@ -102,7 +93,7 @@ int simplemain(string& img1, string& img2)
     // Compare both
     input_binary.copyTo( container( Rect(0, 0, input.cols, input.rows) ) );
     input_thinned.copyTo( container( Rect(input.cols, 0, input.cols, input.rows) ) );
-//    imshow("binary versus thinned", container); waitKey(0);
+    imshow("binary versus thinned", container); waitKey(0);
 
     // Now lets detect the strong minutiae using Haris corner detection
     Mat harris_corners, harris_normalised;
@@ -122,16 +113,16 @@ int simplemain(string& img1, string& img2)
     int from_to[] = { 0,0, 1,1, 2,2 };
     mixChannels( in, 3, &harris_c, 1, from_to, 3 );
     for(int x=0; x<harris_normalised.cols; x++){
-        for(int y=0; y<harris_normalised.rows; y++){
-            if ( (int)harris_normalised.at<float>(y, x) > threshold_harris ){
-                // Draw or store the keypoint location here, just like you decide. In our case we will store the location of the keypoint
-                circle(harris_c, Point(x, y), 5, Scalar(0,255,0), 1);
-                circle(harris_c, Point(x, y), 1, Scalar(0,0,255), 1);
-                keypoints.push_back( KeyPoint (x, y, 1) );
-            }
-        }
+       for(int y=0; y<harris_normalised.rows; y++){
+          if ( (int)harris_normalised.at<float>(y, x) > threshold_harris ){
+             // Draw or store the keypoint location here, just like you decide. In our case we will store the location of the keypoint
+             circle(harris_c, Point(x, y), 5, Scalar(0,255,0), 1);
+             circle(harris_c, Point(x, y), 1, Scalar(0,0,255), 1);
+             keypoints.push_back( KeyPoint (x, y, 1) );
+          }
+       }
     }
-//    imshow("temp", harris_c); waitKey(0);
+    imshow("temp", harris_c); waitKey(0);
 
     // Compare both
     Mat ccontainer(input.rows, input.cols*2, CV_8UC3);
@@ -139,7 +130,7 @@ int simplemain(string& img1, string& img2)
     cvtColor(input_thinned_c, input_thinned_c, CV_GRAY2BGR);
     input_thinned_c.copyTo( ccontainer( Rect(0, 0, input.cols, input.rows) ) );
     harris_c.copyTo( ccontainer( Rect(input.cols, 0, input.cols, input.rows) ) );
-//    imshow("thinned versus selected corners", ccontainer); waitKey(0);
+    imshow("thinned versus selected corners", ccontainer); waitKey(0);
 
     // Calculate the ORB descriptor based on the keypoint
     Ptr<Feature2D> orb_descriptor = ORB::create();
@@ -149,10 +140,7 @@ int simplemain(string& img1, string& img2)
     // You can now store the descriptor in a matrix and calculate all for each image.
     // Since we just got the hamming distance brute force matching left, we will take another image and calculate the descriptors also.
     // Removed as much overburden comments as you can find them above
-//    Mat input2 = imread("data/fingerprints/finger-6.tif", IMREAD_GRAYSCALE);
-
-    Mat input2 = imread(img2, IMREAD_GRAYSCALE);
-
+    Mat input2 = imread("data/fingerprints/105_1.tif", IMREAD_GRAYSCALE);
     Mat input_binary2;
     threshold(input2, input_binary2, 0, 255, CV_THRESH_BINARY_INV | CV_THRESH_OTSU);
     Mat input_thinned2 = input_binary2.clone();
@@ -169,16 +157,16 @@ int simplemain(string& img1, string& img2)
     int from_to2[] = { 0,0, 1,1, 2,2 };
     mixChannels( in2, 3, &harris_c2, 1, from_to2, 3 );
     for(int x=0; x<harris_normalised2.cols; x++){
-        for(int y=0; y<harris_normalised2.rows; y++){
-            if ( (int)harris_normalised2.at<float>(y, x) > threshold_harris ){
-                // Draw or store the keypoint location here, just like you decide. In our case we will store the location of the keypoint
-                circle(harris_c2, Point(x, y), 5, Scalar(0,255,0), 1);
-                circle(harris_c2, Point(x, y), 1, Scalar(0,0,255), 1);
-                keypoints2.push_back( KeyPoint (x, y, 1) );
-            }
-        }
+       for(int y=0; y<harris_normalised2.rows; y++){
+          if ( (int)harris_normalised2.at<float>(y, x) > threshold_harris ){
+             // Draw or store the keypoint location here, just like you decide. In our case we will store the location of the keypoint
+             circle(harris_c2, Point(x, y), 5, Scalar(0,255,0), 1);
+             circle(harris_c2, Point(x, y), 1, Scalar(0,0,255), 1);
+             keypoints2.push_back( KeyPoint (x, y, 1) );
+          }
+       }
     }
-//    imshow("temp2", harris_c2); waitKey(0);
+    imshow("temp2", harris_c2); waitKey(0);
     Mat descriptors2;
     orb_descriptor->compute(input_thinned2, keypoints2, descriptors2);
 
@@ -197,34 +185,7 @@ int simplemain(string& img1, string& img2)
     }
     cerr << endl << "Current matching score = " << score << endl;
 
-    return (int)score;
+    return 0;
 }
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_doshup_idboxfingerprint_MainActivity_nativeIsSameFinger(
-    JNIEnv *env,
-    jobject /* this */, jstring img1, jstring img2) {
 
-    std::string imgn1 = ConvertJString(env, img1);
-    std::string imgn2 = ConvertJString(env, img2);
-
-//    std::string score = simplemain(imgn1, imgn2);
-
-    std::stringstream score;
-    score << simplemain(imgn1, imgn2);
-
-//    const char name = "test";
-//    char msg[60] = "Hello ";
-//    jstring result;
-//    strcat(msg, name);
-//    (*env).ReleaseStringUTFChars(env,string, name);
-//    puts(msg);
-//    result = (env).NewStringUTF(env,msg);
-//    return result;
-
-
-
-
-    return env->NewStringUTF(score.str().data());
-
-}

@@ -1,4 +1,4 @@
-package doshup.idboxfingerprint;
+package io.idbox.fpsample;
 
 import org.junit.Test;
 
