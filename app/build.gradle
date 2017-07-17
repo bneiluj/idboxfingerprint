@@ -24,10 +24,10 @@ android {
 
     productFlavors {
         fake {
-            buildConfigField 'boolean', 'FP_FAKE', 'true'
+            buildConfigField 'boolean', 'FP_FAKE', 'false'
         }
         uareu {
-            buildConfigField 'boolean', 'FP_FAKE', 'false'
+            buildConfigField 'boolean', 'FP_FAKE', 'true'
         }
     }
 
