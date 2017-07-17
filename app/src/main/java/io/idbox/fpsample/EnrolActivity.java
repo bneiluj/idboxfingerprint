@@ -203,6 +203,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
                             @Override
                             public void run() {
                                 manageView(Step.MATCHING);
+                                FingerprintWrapper.getInstance().match(EnrolActivity.this,imgFp, EnrolActivity.this);
                             }
                         }, TIME_SHOW_MSG);
                     case MATCHING:
