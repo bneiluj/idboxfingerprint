@@ -16,8 +16,9 @@ import io.idbox.fpsample.util.FileUtil;
 public class FingerprintWrapper {
 
     //size in pixel of uareu 4500: http://www.pixelcalculator.com/index.php?lang=en&DD_DP=1&i1_=14.6&i2_=18.1&i3_=512&i4_=294&i5_=365&DP=1&round=&FORM=1&DD=8#b
-    private static final int FP_HEIGHT = 294;
-    private static final int FP_WIDTH = 365;
+    private static final int FP_HEIGHT = 290;
+    private static final int FP_WIDTH = 384;
+
     //TODO set good value for match success
     private static final float FP_MATCH_SUCCESS_RESULT = 1.0f;
     private static final String TAG = Constants.TAG_PREFIX + "FingerprintWrapper";
