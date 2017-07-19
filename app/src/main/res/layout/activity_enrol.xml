@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="io.idbox.fpsample.EnrolActivity">
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_centerInParent="true"
+        android:src="@drawable/fp"
+        android:id="@+id/imageViewFP"/>
+
+    <ImageView
+        android:id="@+id/imageViewFPResult"
+        android:layout_width="384dp"
+        android:layout_height="290dp"
+        android:layout_centerInParent="true"
+        android:scaleType="fitXY"
+        android:layout_gravity="center"/>
+
+
+    <TextView
+        android:id="@+id/textViewFP"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="30dp"
+        android:text="@string/finger_put"/>
+
+    <ProgressBar
+        android:id="@+id/progressBarMatching"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="invisible"
+        android:layout_centerInParent="true" />
+
+</RelativeLayout>

@@ -1,3 +1,42 @@
 <resources>
-    <string name="app_name">U.are.U 4500 reader</string>
+    <string name="app_name">IDBox</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="title_activity_splash">SplashActivity</string>
+    <string name="sim_card_phone_number">Sim card phone number</string>
+    <string name="server_phone_number">Server phone number</string>
+    <string name="currency">Currency</string>
+    <string name="validate">Validate</string>
+    <string name="enrol">Enrol</string>
+    <string name="show_user">Show user</string>
+    <string name="finger_put">Put your finger</string>
+    <string name="finger_success">Finger captured !</string>
+    <string name="user_phone_number">User\'s phone number</string>
+    <string name="confirm_phone_number">Confirm phone number</string>
+    <string name="ok">OK</string>
+    <string name="permission_camera_rationale">Access to the camera is needed for detection</string>
+    <string name="no_camera_permission">This application cannot run because it does not have the camera permission.  The application will now exit.</string>
+    <string name="low_storage_error">Face detector dependencies cannot be downloaded due to low device storage</string>
+
+
+    <string name="barcode_success">Barcode read successfully</string>
+    <string name="barcode_failure">No barcode captured</string>
+    <string name="barcode_error">"Error reading barcode: %1$s"</string>
+    <string name="attach_card">Attach card (QR code)</string>
+    <string name="error_phone">Phone number is not valid.</string>
+
+    <string name="error_sim_number">Sim card phone number is not valid</string>
+    <string name="error_server_number">Server phone number is not valid</string>
+
+    <string name="error_phone_same">Phone numbers are not the same.</string>
+    <string name="error_card_attached">Card is not attached.</string>
+
+    <string name="user_already_exist">User already exists.</string>
+    <string name="pinch">Pinch/Stretch to zoom</string>
+    <string name="error_server_number_needed">Please fill server phone number, in settings</string>
+    <string name="enrol_done">Enrol done</string>
+    <string name="enrol_failed">Enrol failed</string>
+    <string name="fp_already_registered">Fingerprint already registered</string>
+    <string name="fp_matching">fingerprint matching</string>
+
 </resources>
