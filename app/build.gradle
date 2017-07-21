@@ -59,7 +59,6 @@ dependencies {
     compile 'com.google.android.gms:play-services:11.0.2'
     compile 'com.android.support:design:25.3.1'
     compile 'com.android.support:support-v4:25.3.1'
-    compile 'asia.kanopi.tools:fingerscan:0.1'
     compile 'com.klinkerapps:android-smsmms:4.1.1'
     testCompile 'junit:junit:4.12'
 }

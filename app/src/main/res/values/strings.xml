@@ -38,5 +38,9 @@
     <string name="enrol_failed">Enrol failed</string>
     <string name="fp_already_registered">Fingerprint already registered</string>
     <string name="fp_matching">fingerprint matching</string>
+    <string name="error_fp_readers_not_found">Fingerprint reader not found</string>
+    <string name="init">Initialization</string>
+    <string name="fp_init_failed">Initialization of reader failed</string>
+    <string name="fp_capture_failed">Capture failed.</string>
 
 </resources>
