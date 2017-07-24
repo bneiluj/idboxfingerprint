@@ -60,6 +60,7 @@ public class EnrolActivity extends AppCompatActivity {
     private boolean onResume;
     private int errorMsg;
 
+    private boolean usbReceiverRegistered;
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -135,6 +136,14 @@ public class EnrolActivity extends AppCompatActivity {
             stopFpReader();
         }
         super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(usbReceiverRegistered){
+            unregisterReceiver(mUsbReceiver);
+        }
+        super.onDestroy();
     }
 
     private boolean getFpReader() {
@@ -262,8 +271,10 @@ public class EnrolActivity extends AppCompatActivity {
 
     private void checkUsbPermission() {
         Log.d(TAG, "checkUsbPermission");
+
         PendingIntent mPermissionIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+        usbReceiverRegistered = true;
         registerReceiver(mUsbReceiver, filter);
 
         try {
