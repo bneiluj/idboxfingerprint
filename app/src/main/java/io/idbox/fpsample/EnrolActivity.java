@@ -151,6 +151,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
             Log.e(TAG, "No fp readers");
             errorMsg = R.string.error_fp_readers_not_found;
             step = Step.ERROR;
+            return false;
         }
         reader = readers.get(0);
         Log.d(TAG, "fpr reader found=" + reader.GetDescription().name);
