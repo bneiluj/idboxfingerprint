@@ -45,7 +45,7 @@ public class UserInfoActivity extends AppCompatActivity {
     private TextView textViewCardStatus;
     private Button buttonValidate;
     private boolean onResume;
-    private byte[] fp;
+    private byte[] fmd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,11 +53,11 @@ public class UserInfoActivity extends AppCompatActivity {
         setContentView(R.layout.activity_user_info);
 
         Intent intent = getIntent();
-        if(intent == null || !intent.hasExtra(Constants.EXTRA_FP)){
+        if(intent == null || !intent.hasExtra(Constants.EXTRA_FMD)){
             Log.e(TAG, "no extra fp byte array in intent, so close");
             finish();
         }
-        fp = intent.getByteArrayExtra(Constants.EXTRA_FP);
+        fmd = intent.getByteArrayExtra(Constants.EXTRA_FMD);
         editTextPhoneNumber = (EditText) findViewById(R.id.editTextPhoneNumber);
         editTextPhoneNumberConfirm = (EditText) findViewById(R.id.editTextPhoneNumberConfirm);
         textViewCardStatus = (TextView) findViewById(R.id.textViewCardStatus);
@@ -177,7 +177,7 @@ public class UserInfoActivity extends AppCompatActivity {
         protected Boolean doInBackground(Void... params) {
 
             try {
-                FileUtil.saveFile(UserInfoActivity.this,phoneNumber, fp);
+                FileUtil.saveFile(UserInfoActivity.this,phoneNumber, fmd);
             } catch (FileAlreadyExists fileAlreadyExists) {
                 Log.e(TAG, "File already exists");
                 return false;

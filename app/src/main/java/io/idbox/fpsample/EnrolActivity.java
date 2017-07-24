@@ -21,6 +21,7 @@ import android.widget.Toast;
 import com.digitalpersona.uareu.Engine;
 import com.digitalpersona.uareu.Fid;
 import com.digitalpersona.uareu.Fmd;
+import com.digitalpersona.uareu.Importer;
 import com.digitalpersona.uareu.Reader;
 import com.digitalpersona.uareu.ReaderCollection;
 import com.digitalpersona.uareu.UareUException;
@@ -28,37 +29,46 @@ import com.digitalpersona.uareu.UareUGlobal;
 import com.digitalpersona.uareu.dpfpddusbhost.DPFPDDUsbException;
 import com.digitalpersona.uareu.dpfpddusbhost.DPFPDDUsbHost;
 
-import io.idbox.fpsample.callback.OnFingerprintCallback;
+import java.util.Map;
+
 import io.idbox.fpsample.fingerprint.Globals;
 import io.idbox.fpsample.util.Constants;
+import io.idbox.fpsample.util.FileUtil;
 
-public class EnrolActivity extends AppCompatActivity implements OnFingerprintCallback {
+public class EnrolActivity extends AppCompatActivity {
 
     private static final String ACTION_USB_PERMISSION = "com.digitalpersona.uareu.dpfpddusbhost.USB_PERMISSION";
     private static final String TAG = Constants.TAG_PREFIX + "EnrolActivity";
     private static final int TIME_SHOW_MSG = 3000;
-    private byte[] imgFp;
+
+    //fingerprint
     private Reader reader;
     private boolean readerReady;
     private Engine engine;
     private int readerDPI;
+    private Importer importer;
     private EnrollmentCallback enrollThread;
+
+    //UI
     private ImageView imageViewFP;
     private ImageView imageViewFPResult;
     private TextView textViewFP;
     private ProgressBar progressBarMatching;
+
+    //state
     private Step step;
     private boolean onResume;
     private int errorMsg;
+
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (ACTION_USB_PERMISSION.equals(action)) {
+                Log.d(TAG, "onReceive com.digitalpersona.uareu.dpfpddusbhost.USB_PERMISSION");
                 synchronized (this) {
                     UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (device != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         openFpReader();
-
                     } else {
                         Log.e(TAG, "Failed to request usb permission ");
                         errorMsg = R.string.fp_init_failed;
@@ -72,6 +82,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "onCreate FP_FAKE=" + BuildConfig.FP_FAKE);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_enrol);
 
@@ -98,7 +109,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
         } else {
             step = Step.INIT;
             readerReady = false;
-            // initiliaze dp sdk
+            // initialize dp sdk
             if (getFpReader()) {
                 checkUsbPermission();
             }
@@ -107,6 +118,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
 
     @Override
     protected void onResume() {
+        Log.d(TAG, "onResume");
         super.onResume();
         onResume = true;
         manageView(step);
@@ -117,6 +129,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
 
     @Override
     protected void onPause() {
+        Log.d(TAG, "onPause");
         onResume = false;
         if (!BuildConfig.FP_FAKE) {
             stopFpReader();
@@ -124,19 +137,8 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
         super.onPause();
     }
 
-    @Override
-    public void result(boolean success) {
-        if (success) {
-            //fingerprint already registered
-            Toast.makeText(EnrolActivity.this, R.string.fp_already_registered, Toast.LENGTH_SHORT).show();
-            finish();
-        } else {
-            //no fingerprint matching, could go to user info
-            nextActivity(imgFp);
-        }
-    }
-
     private boolean getFpReader() {
+        Log.d(TAG, "getFpReader");
         ReaderCollection readers;
         try {
             readers = Globals.getInstance().getReaders(getApplicationContext());
@@ -159,10 +161,12 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
     }
 
     private void openFpReader() {
+        Log.d(TAG, "openFpReader");
         try {
             reader.Open(Reader.Priority.EXCLUSIVE);
             readerDPI = Globals.GetFirstDPI(reader);
             engine = UareUGlobal.GetEngine();
+            importer = UareUGlobal.GetImporter();
             readerReady = true;
         } catch (Exception e) {
             Log.e(TAG, "Error when open fp reader", e);
@@ -173,6 +177,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
     }
 
     private void startEnrollAndMatch() {
+        Log.d(TAG, "startEnrollAndMatch");
         // loop capture on a separate thread to avoid freezing the UI
         new Thread(new Runnable() {
             @Override
@@ -180,6 +185,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
                 try {
                     enrollThread = new EnrollmentCallback();
 
+                    Log.d(TAG, "CreateEnrollmentFmd");
                     Fmd fmd = engine.CreateEnrollmentFmd(Fmd.Format.ANSI_378_2004, enrollThread);
                     if(fmd==null){
                         Log.e(TAG,"capture failed");
@@ -197,20 +203,38 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
                     imageViewFPResult.setImageBitmap(bitmap);
                     manageView(Step.CAPTURED);
 
-                    //TODO get FIV from result + match with other FIV  + send template to other activity
-//                    fmd.getViews()[0].
-//
-//
-//                    Fmd m_temp = engine.CreateFmd(cap_result.image, Fmd.Format.ANSI_378_2004);
-//                    Fmd[] m_fmds_temp = new Fmd[] {m_fmd1, m_fmd2, m_fmd3, m_fmd4};
-//                    results = m_engine.Identify(m_temp, 0, m_fmds_temp, 100000, 2);
-//
-//                    if (results.length != 0)
-//                    {
-//                        m_score = m_engine.Compare(m_fmds_temp[results[0].fmd_index], 0, m_temp, 0);
+                    Map<String, byte[]> files =  FileUtil.readFiles(EnrolActivity.this);
+                    if(files!=null && !files.isEmpty()){
+                        Log.d(TAG, files.size() + " fingerprint saved to match");
+                        Fmd[] fmds = new Fmd[files.size()];
+                        String[] phones = new String[files.size()];
+                        int i=0;
+                        for(Map.Entry<String, byte[]> entry : files.entrySet()) {
+                            Log.d(TAG, "ImportFmd " + entry.getKey());
+                            Fmd fmdSaved = importer.ImportFmd(entry.getValue(),Fmd.Format.ANSI_378_2004, Fmd.Format.ANSI_378_2004);
+                            fmds[i] = fmdSaved;
+                            phones[i] = entry.getKey();
+                            i++;
+                        }
+                        manageView(Step.MATCHING);
+                        Log.d(TAG, "Identify");
+                        Engine.Candidate[] candidates = engine.Identify(fmd, 0, fmds, 100000, 1);
 
+                        if (candidates.length != 0){
+                            int idx = candidates[0].fmd_index;
+                            String found = phones[idx];
+                            Log.d(TAG, "User already registered, phone number=" + found);
+                            errorMsg = R.string.fp_already_registered;
+                            manageView(Step.ERROR);
+                            return;
+                        }else{
+                            Log.d(TAG, "No saved fingerprint matching");
+                        }
 
-
+                    }else{
+                        Log.d(TAG, "No saved FMDs, nothing to compare");
+                    }
+                    nextActivity(fmd.getData());
                 } catch (Exception e) {
                     Log.e(TAG, "error during capture", e);
                     errorMsg = R.string.fp_capture_failed;
@@ -221,6 +245,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
     }
 
     private void stopFpReader() {
+        Log.d(TAG, "stopFpReader");
         if (reader != null && readerReady) {
             try {
                 reader.CancelCapture();
@@ -236,6 +261,7 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
     }
 
     private void checkUsbPermission() {
+        Log.d(TAG, "checkUsbPermission");
         PendingIntent mPermissionIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         registerReceiver(mUsbReceiver, filter);
@@ -251,70 +277,6 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
         }
 
     }
-
-
-    //    Handler updateHandler = new Handler(Looper.getMainLooper()) {
-    //        @Override
-    //        public void handleMessage(Message msg) {
-    //            int status = msg.getData().getInt("status");
-    //            switch (status) {
-    //                case Status.INITIALISED:
-    //                    textViewFP.setText("Setting up reader");
-    //                    break;
-    //                case Status.SCANNER_POWERED_ON:
-    //                    textViewFP.setText("Reader powered on");
-    //                    break;
-    //                case Status.READY_TO_SCAN:
-    //                    textViewFP.setText("Ready to scan finger");
-    //                    break;
-    //                case Status.FINGER_DETECTED:
-    //                    textViewFP.setText("Finger detected");
-    //                    break;
-    //                case Status.RECEIVING_IMAGE:
-    //                    textViewFP.setText("Receiving image");
-    //                    break;
-    //                case Status.FINGER_LIFTED:
-    //                    textViewFP.setText("Finger has been lifted off reader");
-    //                    break;
-    //                case Status.SCANNER_POWERED_OFF:
-    //                    textViewFP.setText("Reader is off");
-    //                    break;
-    //                case Status.SUCCESS:
-    //                    textViewFP.setText("Fingerprint successfully captured");
-    //                    break;
-    //                case Status.ERROR:
-    //                    textViewFP.setText(msg.getData().getString("errorMessage"));
-    //                    break;
-    //                default:
-    //                    textViewFP.setText(msg.getData().getString("errorMessage"));
-    //                    break;
-    //
-    //            }
-    //        }
-    //    };
-    //
-    //    Handler printHandler = new Handler(Looper.getMainLooper()) {
-    //        @Override
-    //        public void handleMessage(Message msg) {
-    //            byte[] image;
-    //            String errorMessage = "empty";
-    //            int status = msg.getData().getInt("status");
-    //            if (status == Status.SUCCESS) {
-    //
-    //                imgFp = msg.getData().getByteArray("img");
-    //                Bitmap bm = BitmapFactory.decodeByteArray(imgFp, 0, imgFp.length);
-    //                imageViewFPResult.setImageBitmap(bm);
-    //
-    //                manageView(Step.CAPTURED);
-    //            } else {
-    //                errorMessage = msg.getData().getString("errorMessage");
-    //                textViewFP.setText(errorMessage);
-    //
-    //                manageView(Step.ERROR);
-    //            }
-    //
-    //        }
-    //    };
 
     private void manageView(final Step step) {
         Log.d(TAG, "manageView " + step);
@@ -347,15 +309,6 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
                         progressBarMatching.setVisibility(View.INVISIBLE);
 
                         textViewFP.setText(R.string.finger_success);
-
-                        //goto matching step
-                        new Handler().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                manageView(Step.MATCHING);
-                                FingerprintWrapper.getInstance().match(EnrolActivity.this, imgFp, EnrolActivity.this);
-                            }
-                        }, TIME_SHOW_MSG);
                     case MATCHING:
                         imageViewFP.setVisibility(View.INVISIBLE);
                         imageViewFPResult.setVisibility(View.INVISIBLE);
@@ -381,9 +334,10 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
         });
     }
 
-    private void nextActivity(byte[] img) {
+    private void nextActivity(byte[] fmd) {
+        Log.d(TAG, "nextActivity");
         Intent intent = new Intent(EnrolActivity.this, UserInfoActivity.class);
-        intent.putExtra(Constants.EXTRA_FP, img);
+        intent.putExtra(Constants.EXTRA_FMD, fmd);
         startActivity(intent);
     }
 
@@ -395,17 +349,16 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
         ERROR
     }
 
-    public class EnrollmentCallback extends Thread implements Engine.EnrollmentCallback {
+    private class EnrollmentCallback extends Thread implements Engine.EnrollmentCallback {
 
-
-        public EnrollmentCallback() {
-        }
 
         // callback function is called by dp sdk to retrieve fmds until a null is returned
         @Override
         public Engine.PreEnrollmentFmd GetFmd(Fmd.Format format) {
+            Log.d(TAG, "GetFmd format" + format);
             Engine.PreEnrollmentFmd result = null;
 
+            Log.d(TAG, "start Capture ...");
             Reader.CaptureResult captureResult;
             try {
                 captureResult = reader.Capture(Fid.Format.ANSI_381_2004, Globals.DefaultImageProcessing, readerDPI, -1);
@@ -413,12 +366,14 @@ public class EnrolActivity extends AppCompatActivity implements OnFingerprintCal
                 Log.e(TAG, "error during capture: " + e.toString());
                 return null;
             }
+            Log.d(TAG, "Capture finished");
 
-
+            Log.d(TAG, "GetBitmapFromRaw");
             try {
                 // save bitmap image locally
                 bitmap = Globals.GetBitmapFromRaw(captureResult.image.getViews()[0].getImageData(), captureResult.image.getViews()[0].getWidth(), captureResult.image.getViews()[0].getHeight());
                 result = new Engine.PreEnrollmentFmd();
+                Log.d(TAG, "CreateFmd");
                 result.fmd = engine.CreateFmd(captureResult.image, Fmd.Format.ANSI_378_2004);
                 result.view_index = 0;
 
