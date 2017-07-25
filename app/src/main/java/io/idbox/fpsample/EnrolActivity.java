@@ -149,8 +149,7 @@ public class EnrolActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        handler.removeCallbacksAndMessages(null);
-        if (usbReceiverRegistered) {
+        if(usbReceiverRegistered){
             unregisterReceiver(mUsbReceiver);
         }
         super.onDestroy();
@@ -222,8 +221,10 @@ public class EnrolActivity extends AppCompatActivity {
                         return;
                     }
 
-                    Map<String, byte[]> files = FileUtil.readFiles(EnrolActivity.this);
-                    if (files != null && !files.isEmpty()) {
+                    manageView(Step.CAPTURED);
+
+                    Map<String, byte[]> files =  FileUtil.readFiles(EnrolActivity.this);
+                    if(files!=null && !files.isEmpty()){
                         Log.d(TAG, files.size() + " fingerprint saved to match");
                         Fmd[] fmds = new Fmd[files.size()];
                         final String[] phones = new String[files.size()];
@@ -297,6 +298,7 @@ public class EnrolActivity extends AppCompatActivity {
 
     private void checkUsbPermission() {
         Log.d(TAG, "checkUsbPermission");
+
         PendingIntent mPermissionIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         usbReceiverRegistered = true;
@@ -342,6 +344,9 @@ public class EnrolActivity extends AppCompatActivity {
                         break;
                     case CAPTURED:
                         imageViewFP.setVisibility(View.INVISIBLE);
+                        if(bitmap!= null) {
+                            imageViewFPResult.setImageBitmap(bitmap);
+                        }
                         imageViewFPResult.setVisibility(View.VISIBLE);
                         progressBarMatching.setVisibility(View.INVISIBLE);
 
