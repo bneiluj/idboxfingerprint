@@ -62,6 +62,7 @@
         android:text="Send confirmation SMS"/>
 
     <Button
+        android:textColor="@color/white"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/validate"

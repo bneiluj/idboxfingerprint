@@ -14,7 +14,7 @@
 
     <ImageView
         android:id="@+id/imageViewFPResult"
-        android:layout_width="384dp"
+        android:layout_width="400dp"
         android:layout_height="290dp"
         android:layout_centerInParent="true"
         android:scaleType="fitXY"
@@ -22,6 +22,7 @@
 
 
     <TextView
+        android:textColor="@color/colorPrimaryDark"
         android:id="@+id/textViewFP"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

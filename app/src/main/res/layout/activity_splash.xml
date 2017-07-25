@@ -12,10 +12,11 @@
         android:id="@+id/fullscreen_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:padding="48dp"
         android:gravity="center"
-        android:scaleType="center"
+        android:scaleType="fitCenter"
         android:keepScreenOn="true"
-        android:src="@mipmap/ic_launcher"/>
+        android:src="@drawable/idboxbox"/>
 
     <!-- This FrameLayout insets its children based on system windows using
          android:fitsSystemWindows. -->

@@ -40,6 +40,7 @@
         />
 
     <Button
+        android:textColor="@color/white"
         android:theme="@style/ButtonColored"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -53,6 +54,7 @@
 
 
     <Button
+        android:textColor="@color/white"
         android:id="@+id/buttonValidate"
         android:theme="@style/ButtonColored"
         android:layout_width="match_parent"
