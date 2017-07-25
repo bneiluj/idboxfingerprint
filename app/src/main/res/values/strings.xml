@@ -9,8 +9,9 @@
     <string name="validate">Validate</string>
     <string name="enrol">Enrol</string>
     <string name="show_user">Show user</string>
-    <string name="finger_put">Put your finger</string>
-    <string name="finger_success">Finger captured !</string>
+    <string name="pay_as_you_go">Pay As You Go</string>
+    <string name="finger_put">Hold your finger on the scanner</string>
+    <string name="finger_success">Fingerprint captured!</string>
     <string name="user_phone_number">User\'s phone number</string>
     <string name="confirm_phone_number">Confirm phone number</string>
     <string name="ok">OK</string>
@@ -23,6 +24,7 @@
     <string name="barcode_failure">No barcode captured</string>
     <string name="barcode_error">"Error reading barcode: %1$s"</string>
     <string name="attach_card">Attach card (QR code)</string>
+    <string name="charge">Charge</string>
     <string name="error_phone">Phone number is not valid.</string>
 
     <string name="error_sim_number">Sim card phone number is not valid</string>
@@ -36,11 +38,18 @@
     <string name="error_server_number_needed">Please fill server phone number, in settings</string>
     <string name="enrol_done">Enrol done</string>
     <string name="enrol_failed">Enrol failed</string>
-    <string name="fp_already_registered">Fingerprint already registered</string>
-    <string name="fp_matching">fingerprint matching</string>
+    <string name="show_user_done">User updated</string>
+    <string name="show_user_failed">User update failed</string>
+    <string name="fp_already_registered">Fingerprint already registered,\nexiting…</string>
+    <string name="fp_matching">Matching fingerprint</string>
+    <string name="fp_found">Matching fingerprint found</string>
+    <string name="fp_not_matching">No matching fingerprints found,\nexiting…</string>
     <string name="error_fp_readers_not_found">Fingerprint reader not found</string>
     <string name="init">Initialization</string>
     <string name="fp_init_failed">Initialization of reader failed</string>
     <string name="fp_capture_failed">Capture failed.</string>
+
+    <string name="sms_id_created">Your identity has been created</string>
+    <string name="sms_id_updated">Your identity has been updated</string>
 
 </resources>

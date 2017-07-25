@@ -3,10 +3,11 @@ package io.idbox.fpsample;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -26,49 +27,37 @@ import io.idbox.fpsample.util.ValidatorUtil;
 /**
  * Create by IDbox
  */
-
-public class UserInfoActivity extends AppCompatActivity {
+public class ShowUserInfoActivity extends AppCompatActivity {
 
     private static final int MY_PERMISSIONS_REQUEST_SEND_SMS = 402;
     private static final String TAG = Constants.TAG_PREFIX + "UserInfoActivity";
     private static final int RC_BARCODE_CAPTURE = 9001;
 
     private String barcodeValue;
-    private String phoneNumber;
     private EditText editTextPhoneNumber;
-    private EditText editTextPhoneNumberConfirm;
     private TextView textViewCardStatus;
     private Button buttonValidate;
-    private boolean onResume;
+    private String phoneNumber, savedPhoneNumber;
     private byte[] fmd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_user_info);
+        setContentView(R.layout.activity_show_user);
 
         Intent intent = getIntent();
-        if(intent == null || !intent.hasExtra(Constants.EXTRA_FMD)){
-            Log.e(TAG, "no extra fp byte array in intent, so close");
+        if(intent == null || !intent.hasExtra(Constants.EXTRA_PHONE_NUMBER)
+                || !intent.hasExtra(Constants.EXTRA_FMD)){
+            Log.e(TAG, "not the right extras in intent, so close");
             finish();
         }
         fmd = intent.getByteArrayExtra(Constants.EXTRA_FMD);
+        savedPhoneNumber = intent.getStringExtra(Constants.EXTRA_PHONE_NUMBER);
         editTextPhoneNumber = (EditText) findViewById(R.id.editTextPhoneNumber);
-        editTextPhoneNumberConfirm = (EditText) findViewById(R.id.editTextPhoneNumberConfirm);
         textViewCardStatus = (TextView) findViewById(R.id.textViewCardStatus);
         buttonValidate = (Button) findViewById(R.id.buttonValidate);
-    }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        onResume = true;
-    }
-
-    @Override
-    protected void onPause() {
-        onResume = false;
-        super.onPause();
+        editTextPhoneNumber.setText(savedPhoneNumber);
     }
 
     public void clickBarCode(View view) {
@@ -104,24 +93,14 @@ public class UserInfoActivity extends AppCompatActivity {
     }
 
     public void clickValidate(View view) {
+
+
         phoneNumber = editTextPhoneNumber.getText().toString();
-        String phoneNumerConfirm = editTextPhoneNumberConfirm.getText().toString();
 
         if(!ValidatorUtil.isPhoneNumber(phoneNumber)){
             Toast.makeText(this, R.string.error_phone, Toast.LENGTH_SHORT).show();
             return;
         }
-
-        if(!phoneNumber.trim().equals(phoneNumerConfirm.trim())){
-            Toast.makeText(this, R.string.error_phone_same, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if(FileUtil.checkFileExist(this, phoneNumber)){
-            Toast.makeText(this, R.string.user_already_exist, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
 
         if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.SEND_SMS)
@@ -157,7 +136,12 @@ public class UserInfoActivity extends AppCompatActivity {
     }
 
     private void sendSms(){
-        new SensSms().execute();
+        if (!TextUtils.equals(savedPhoneNumber, phoneNumber) || barcodeValue != null) {
+            new SensSms().execute();
+        } else {
+            Toast.makeText(ShowUserInfoActivity.this, "You must update number or attach QR code",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private class SensSms extends AsyncTask<Void,Void, Boolean>{
@@ -172,17 +156,20 @@ public class UserInfoActivity extends AppCompatActivity {
         protected Boolean doInBackground(Void... params) {
 
             try {
-                FileUtil.saveFile(UserInfoActivity.this,phoneNumber, fmd);
+                if (!TextUtils.equals(savedPhoneNumber, phoneNumber)) {
+                    FileUtil.deleteFile(ShowUserInfoActivity.this, savedPhoneNumber);
+                    FileUtil.saveFile(ShowUserInfoActivity.this, phoneNumber, fmd);
+                }
             } catch (FileAlreadyExists fileAlreadyExists) {
                 Log.e(TAG, "File already exists");
                 return false;
 
             }
-            SmsUtil.sendSmsToServer(UserInfoActivity.this,phoneNumber, barcodeValue );
+            SmsUtil.sendSmsToServer(ShowUserInfoActivity.this,phoneNumber, barcodeValue);
             if (getSharedPreferences(Constants.PREF_FILE, 0)
                     .getBoolean(Constants.PREF_KEY_CONFIRMATION, false)) {
-                String msg = getString(R.string.sms_id_created);
-                SmsUtil.sendSmsToUser(UserInfoActivity.this, phoneNumber, msg);
+                String msg = getString(R.string.sms_id_updated);
+                SmsUtil.sendSmsToUser(ShowUserInfoActivity.this, phoneNumber, msg);
             }
 
             return true;
@@ -192,9 +179,9 @@ public class UserInfoActivity extends AppCompatActivity {
         protected void onPostExecute(Boolean result) {
             super.onPostExecute(result);
             if(result!= null && result){
-                Toast.makeText(UserInfoActivity.this, R.string.enrol_done, Toast.LENGTH_SHORT).show();
+                Toast.makeText(ShowUserInfoActivity.this, R.string.show_user_done, Toast.LENGTH_SHORT).show();
             }else{
-                Toast.makeText(UserInfoActivity.this, R.string.enrol_failed, Toast.LENGTH_SHORT).show();
+                Toast.makeText(ShowUserInfoActivity.this, R.string.show_user_failed, Toast.LENGTH_SHORT).show();
             }
             finish();
         }

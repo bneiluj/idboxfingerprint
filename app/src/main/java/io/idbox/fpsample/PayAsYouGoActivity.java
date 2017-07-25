@@ -29,14 +29,13 @@ import com.digitalpersona.uareu.UareUGlobal;
 import com.digitalpersona.uareu.dpfpddusbhost.DPFPDDUsbException;
 import com.digitalpersona.uareu.dpfpddusbhost.DPFPDDUsbHost;
 
-import java.sql.Time;
 import java.util.Map;
 
 import io.idbox.fpsample.fingerprint.Globals;
 import io.idbox.fpsample.util.Constants;
 import io.idbox.fpsample.util.FileUtil;
 
-public class EnrolActivity extends AppCompatActivity {
+public class PayAsYouGoActivity extends AppCompatActivity {
 
     private static final String ACTION_USB_PERMISSION = "com.digitalpersona.uareu.dpfpddusbhost.USB_PERMISSION";
     private static final String TAG = Constants.TAG_PREFIX + "EnrolActivity";
@@ -48,7 +47,8 @@ public class EnrolActivity extends AppCompatActivity {
     private Engine engine;
     private int readerDPI;
     private Importer importer;
-    private EnrollmentCallback enrollThread;
+    private Reader.CaptureResult cap_result = null;
+    private boolean m_reset = false;
 
     //UI
     private ImageView imageViewFP;
@@ -74,7 +74,6 @@ public class EnrolActivity extends AppCompatActivity {
                         if (device != null) {
                             openFpReader();
                             startEnrollAndMatch();
-                            manageView(Step.PUT_FINGER);
                         }
                     } else {
                         Log.e(TAG, "Failed to request usb permission ");
@@ -111,7 +110,7 @@ public class EnrolActivity extends AppCompatActivity {
                     new Handler().postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            nextActivity(new byte[]{0x20});
+                            nextActivity("");
                         }
                     }, TIME_SHOW_MSG);
                 }
@@ -205,24 +204,33 @@ public class EnrolActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
-                    enrollThread = new EnrollmentCallback();
+                    Fmd fmd = null;
 
-                    Log.d(TAG, "CreateEnrollmentFmd");
-                    final Fmd fmd = engine.CreateEnrollmentFmd(Fmd.Format.ANSI_378_2004, enrollThread);
-                    if (fmd == null) {
-                        Log.e(TAG, "capture failed");
-                        errorMsg = R.string.fp_capture_failed;
-                        manageView(Step.ERROR);
-                        return;
-                    }
-                    if (fmd.getViewCnt() != 1) {
-                        Log.e(TAG, "Not one capture in result : " + fmd.getViewCnt());
-                        errorMsg = R.string.fp_capture_failed;
-                        manageView(Step.ERROR);
-                        return;
+                    m_reset = false;
+                    try {
+                        cap_result = reader.Capture(Fid.Format.ANSI_381_2004, Globals.DefaultImageProcessing, readerDPI, -1);
+                    } catch (Exception e) {
+                        if (!m_reset) {
+                            Log.w("UareUSampleJava", "error during capture: " + e.toString());
+                            readerName = "";
+                            onBackPressed();
+                        }
                     }
 
-                    Map<String, byte[]> files = FileUtil.readFiles(EnrolActivity.this);
+                    // an error occurred
+                    if (cap_result == null || cap_result.image == null) return;
+
+                    try {
+                        // save bitmap image locally
+                        bitmap = Globals.GetBitmapFromRaw(cap_result.image.getViews()[0].getImageData(), cap_result.image.getViews()[0].getWidth(), cap_result.image.getViews()[0].getHeight());
+                        fmd = engine.CreateFmd(cap_result.image, Fmd.Format.ANSI_378_2004);
+                    } catch (Exception e) {
+                        Log.w("UareUSampleJava", "Egine error: " + e.toString());
+                    }
+
+                    final String[] found = new String[1];
+
+                    Map<String, byte[]> files = FileUtil.readFiles(PayAsYouGoActivity.this);
                     if (files != null && !files.isEmpty()) {
                         Log.d(TAG, files.size() + " fingerprint saved to match");
                         Fmd[] fmds = new Fmd[files.size()];
@@ -235,35 +243,39 @@ public class EnrolActivity extends AppCompatActivity {
                             phones[i] = entry.getKey();
                             i++;
                         }
-                        manageView(Step.MATCHING);
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateGUI(Step.MATCHING);
+                            }
+                        });
+
+
                         Log.d(TAG, "Identify");
                         final Engine.Candidate[] candidates = engine.Identify(fmd, 0, fmds, 100000, 1);
 
-                        if (candidates.length != 0) {
-                            handler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (candidates.length != 0) {
                                     int idx = candidates[0].fmd_index;
-                                    String found = phones[idx];
-                                    Log.d(TAG, "User already registered, phone number=" + found);
+                                    found[0] = phones[idx];
+                                    Log.d(TAG, "User already registered, phone number=" + found[0]);
                                     errorMsg = R.string.fp_already_registered;
+                                    nextActivity(found[0]);
+                                } else {
+                                    Log.d(TAG, "No saved fingerprint matching");
+                                    errorMsg = R.string.fp_not_matching;
                                     manageView(Step.ERROR);
                                 }
-                            }, TIME_SHOW_MSG);
-                            return;
-                        } else {
-                            Log.d(TAG, "No saved fingerprint matching");
-                        }
-
+                            }
+                        }, TIME_SHOW_MSG);
                     } else {
                         Log.d(TAG, "No saved FMDs, nothing to compare");
+                        errorMsg = R.string.fp_not_matching;
+                        manageView(Step.ERROR);
                     }
-                    handler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            nextActivity(fmd.getData());
-                        }
-                    }, TIME_SHOW_MSG);
                 } catch (Exception e) {
                     Log.e(TAG, "error during capture", e);
                     errorMsg = R.string.fp_capture_failed;
@@ -336,8 +348,7 @@ public class EnrolActivity extends AppCompatActivity {
                         imageViewFP.setVisibility(View.VISIBLE);
                         imageViewFPResult.setVisibility(View.INVISIBLE);
                         progressBarMatching.setVisibility(View.INVISIBLE);
-                        textViewFP.setTextColor(ContextCompat
-                                .getColor(EnrolActivity.this, R.color.material_grey));
+
                         textViewFP.setText(R.string.finger_put);
                         break;
                     case CAPTURED:
@@ -345,18 +356,14 @@ public class EnrolActivity extends AppCompatActivity {
                         imageViewFPResult.setVisibility(View.VISIBLE);
                         progressBarMatching.setVisibility(View.INVISIBLE);
 
-                        textViewFP.setTextColor(ContextCompat
-                                .getColor(EnrolActivity.this, R.color.green));
                         textViewFP.setText(R.string.finger_success);
 
                         handler.postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 textViewFP.setText("Place same finger again!");
-                                textViewFP.setTextColor(ContextCompat
-                                        .getColor(EnrolActivity.this, R.color.amber));
                             }
-                        }, 750);
+                        }, 1000);
                         break;
                     case MATCHING:
                         // prevent handler from CAPTURED setting text
@@ -365,13 +372,14 @@ public class EnrolActivity extends AppCompatActivity {
                         imageViewFP.setVisibility(View.INVISIBLE);
                         imageViewFPResult.setVisibility(View.VISIBLE);
                         progressBarMatching.setVisibility(View.VISIBLE);
+
                         textViewFP.setTextColor(ContextCompat
-                                .getColor(EnrolActivity.this, R.color.green));
+                                .getColor(PayAsYouGoActivity.this, R.color.green));
                         textViewFP.setText(R.string.fp_matching);
                         break;
                     case ERROR:
                         textViewFP.setTextColor(ContextCompat
-                                .getColor(EnrolActivity.this, R.color.red));
+                                .getColor(PayAsYouGoActivity.this, R.color.red));
                         textViewFP.setText(errorMsg);
                         imageViewFP.setVisibility(View.VISIBLE);
                         imageViewFPResult.setVisibility(View.INVISIBLE);
@@ -389,10 +397,10 @@ public class EnrolActivity extends AppCompatActivity {
         });
     }
 
-    private void nextActivity(byte[] fmd) {
+    private void nextActivity(String phoneNumber) {
         Log.d(TAG, "nextActivity");
-        Intent intent = new Intent(EnrolActivity.this, UserInfoActivity.class);
-        intent.putExtra(Constants.EXTRA_FMD, fmd);
+        Intent intent = new Intent(PayAsYouGoActivity.this, PayAsYouGoInfoActivity.class);
+        intent.putExtra(Constants.EXTRA_PHONE_NUMBER, phoneNumber);
         startActivity(intent);
         finish();   // Changed no history flag to false in manifest so that activity doesn't finish
                     // when reader initialising for the first time.
@@ -404,50 +412,6 @@ public class EnrolActivity extends AppCompatActivity {
         CAPTURED,
         MATCHING,
         ERROR
-    }
-
-    private class EnrollmentCallback extends Thread implements Engine.EnrollmentCallback {
-
-
-        // callback function is called by dp sdk to retrieve fmds until a null is returned
-        @Override
-        public Engine.PreEnrollmentFmd GetFmd(Fmd.Format format) {
-            Log.d(TAG, "GetFmd format " + format);
-            Engine.PreEnrollmentFmd result = null;
-
-            Log.d(TAG, "start Capture ...");
-            Reader.CaptureResult captureResult;
-            try {
-                captureResult = reader.Capture(Fid.Format.ANSI_381_2004, Globals.DefaultImageProcessing, readerDPI, -1);
-            } catch (Exception e) {
-                Log.e(TAG, "error during capture: " + e.toString());
-                return null;
-            }
-            Log.d(TAG, "Capture finished");
-
-            Log.d(TAG, "GetBitmapFromRaw");
-            try {
-                // save bitmap image locally
-                bitmap = Globals.GetBitmapFromRaw(captureResult.image.getViews()[0].getImageData(), captureResult.image.getViews()[0].getWidth(), captureResult.image.getViews()[0].getHeight());
-                result = new Engine.PreEnrollmentFmd();
-                Log.d(TAG, "CreateFmd");
-                result.fmd = engine.CreateFmd(captureResult.image, Fmd.Format.ANSI_378_2004);
-                result.view_index = 0;
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        updateGUI(Step.CAPTURED);
-                    }
-                });
-
-            } catch (Exception e) {
-                Log.e(TAG, "Engine error: " + e.toString());
-                return null;
-            }
-
-            return result;
-        }
     }
 
 }

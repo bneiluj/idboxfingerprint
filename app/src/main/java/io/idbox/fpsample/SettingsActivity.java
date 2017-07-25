@@ -1,11 +1,11 @@
 package io.idbox.fpsample;
 
 import android.content.SharedPreferences;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import io.idbox.fpsample.util.Constants;
@@ -16,6 +16,7 @@ public class SettingsActivity extends AppCompatActivity {
     private EditText editTextPhoneNumber;
     private EditText editTextServerNumber;
     private EditText editTextCurrency;
+    private CheckBox checkBoxConfirmation;
     private SharedPreferences sharedPreferences;
 
     @Override
@@ -29,10 +30,13 @@ public class SettingsActivity extends AppCompatActivity {
         String phone = sharedPreferences.getString(Constants.PREF_KEY_PHONE, null);
         String server = sharedPreferences.getString(Constants.PREF_KEY_SERVER, null);
         String currency = sharedPreferences.getString(Constants.PREF_KEY_CURRENCY, null);
+        boolean confirmation = sharedPreferences.getBoolean(Constants.PREF_KEY_CONFIRMATION, false);
 
         editTextPhoneNumber = (EditText)findViewById(R.id.editTextPhoneNumber);
         editTextServerNumber = (EditText)findViewById(R.id.editTextServerNumber);
         editTextCurrency = (EditText)findViewById(R.id.editTextCurrency);
+        checkBoxConfirmation = (CheckBox)findViewById(R.id.checkboxSendUserConfirmation);
+
 
         if(phone!=null){
             editTextPhoneNumber.setText(phone);
@@ -43,6 +47,7 @@ public class SettingsActivity extends AppCompatActivity {
         if(currency!=null){
             editTextCurrency.setText(currency);
         }
+        checkBoxConfirmation.setChecked(confirmation);
     }
 
     public void clickValidate(View view){
@@ -65,6 +70,7 @@ public class SettingsActivity extends AppCompatActivity {
         editor.putString(Constants.PREF_KEY_PHONE, phoneNumber);
         editor.putString(Constants.PREF_KEY_SERVER, serverNumber);
         editor.putString(Constants.PREF_KEY_CURRENCY, editTextCurrency.getText().toString());
+        editor.putBoolean(Constants.PREF_KEY_CONFIRMATION, checkBoxConfirmation.isChecked());
 
         // Commit the edits!
         editor.apply();

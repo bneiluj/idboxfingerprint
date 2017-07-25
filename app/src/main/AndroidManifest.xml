@@ -66,6 +66,18 @@
             android:screenOrientation="portrait"
             android:noHistory="true">
         </activity>
+        <activity android:name=".ShowUserActivity"
+            android:screenOrientation="portrait">
+        </activity>
+        <activity android:name=".ShowUserInfoActivity"
+            android:screenOrientation="portrait">
+        </activity>
+        <activity android:name=".PayAsYouGoActivity"
+            android:screenOrientation="portrait">
+        </activity>
+        <activity android:name=".PayAsYouGoInfoActivity"
+            android:screenOrientation="portrait">
+        </activity>
     </application>
 
 </manifest>

@@ -39,6 +39,14 @@ public class FileUtil {
         return file.exists();
     }
 
+    public static void deleteFile(Context ctx, String phoneNumber) {
+        File file = createFilenameFromNumber(ctx, phoneNumber);
+        if(file.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            file.delete();
+        }
+    }
+
     public static boolean saveFile(Context ctx, String phoneNumber, byte[] data) throws FileAlreadyExists {
         if (!isExternalStorageWritable()) {
             Log.e(TAG, "external storage not writable");
@@ -105,7 +113,7 @@ public class FileUtil {
             byte[] data = readFile(ctx, file);
 
             if (data != null) {
-                result.put(file.getName(), data);
+                result.put(file.getName().split("\\.")[0], data);
             }
         }
         return result;

@@ -16,7 +16,7 @@ public class SmsUtil {
 
     private static final String TAG = Constants.TAG_PREFIX + "SmsUtil";
 
-    public static void sendSms(Context ctx, String phoneNumber, String qrCodeData){
+    public static void sendSmsToServer(Context ctx, String phoneNumber, String qrCodeData){
         String msg = formatSms(phoneNumber, qrCodeData);
 
         SharedPreferences sharedPreferences = ctx.getSharedPreferences(Constants.PREF_FILE, 0);
@@ -27,6 +27,15 @@ public class SmsUtil {
         Message message = new Message(msg, phone);
         transaction.sendNewMessage(message, Transaction.NO_THREAD_ID);
         Log.d(TAG, "sending sms to " + phone );
+    }
+
+    public static void sendSmsToUser(Context ctx, String phoneNumber, String msg){
+        Settings settings = new Settings();
+        settings.setUseSystemSending(true);
+        Transaction transaction = new Transaction(ctx, settings);
+        Message message = new Message(msg, phoneNumber);
+        transaction.sendNewMessage(message, Transaction.NO_THREAD_ID);
+        Log.d(TAG, "sending sms to " + phoneNumber );
     }
 
     private static final String formatSms(String phoneNumber, String qrCodeData){
