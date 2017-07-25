@@ -116,15 +116,15 @@ public class FileUtil {
             Log.e(TAG, "File dont exists");
             return null;
         }
-        try {
-            if (!file.createNewFile()) {
-                Log.e(TAG, "Cant create file " + file.getAbsolutePath());
-                return null;
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Cant create file " + file.getAbsolutePath(), e);
-            return null;
-        }
+//        try {
+//            if (!file.createNewFile()) {
+//                Log.e(TAG, "Cant create file " + file.getAbsolutePath());
+//                return null;
+//            }
+//        } catch (IOException e) {
+//            Log.e(TAG, "Cant create file " + file.getAbsolutePath(), e);
+//            return null;
+//        }
         BufferedInputStream bis = null;
         try {
             byte[] data = new byte[(int) file.length()];

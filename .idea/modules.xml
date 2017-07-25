@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/idboxfingerprint.iml" filepath="$PROJECT_DIR$/idboxfingerprint.iml" />
       <module fileurl="file://$PROJECT_DIR$/idboxfingerprint.iml" filepath="$PROJECT_DIR$/idboxfingerprint.iml" />
     </modules>
   </component>

@@ -16,7 +16,6 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.digitalpersona.uareu.Engine;
 import com.digitalpersona.uareu.Fid;
@@ -60,6 +59,8 @@ public class EnrolActivity extends AppCompatActivity {
     private boolean onResume;
     private int errorMsg;
 
+    private boolean usbReceiverRegistered;
+
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -67,8 +68,11 @@ public class EnrolActivity extends AppCompatActivity {
                 Log.d(TAG, "onReceive com.digitalpersona.uareu.dpfpddusbhost.USB_PERMISSION");
                 synchronized (this) {
                     UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    if (device != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        openFpReader();
+                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                        if (device != null) {
+                            openFpReader();
+                            startEnrollAndMatch();
+                        }
                     } else {
                         Log.e(TAG, "Failed to request usb permission ");
                         errorMsg = R.string.fp_init_failed;
@@ -79,6 +83,8 @@ public class EnrolActivity extends AppCompatActivity {
         }
     };
     private Bitmap bitmap;
+    private String readerName;
+    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +96,7 @@ public class EnrolActivity extends AppCompatActivity {
         textViewFP = (TextView) findViewById(R.id.textViewFP);
         imageViewFPResult = (ImageView) findViewById(R.id.imageViewFPResult);
         progressBarMatching = (ProgressBar) findViewById(R.id.progressBarMatching);
+        handler = new Handler();
 
         if (BuildConfig.FP_FAKE) {
             manageView(Step.PUT_FINGER);
@@ -137,6 +144,15 @@ public class EnrolActivity extends AppCompatActivity {
         super.onPause();
     }
 
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacksAndMessages(null);
+        if (usbReceiverRegistered) {
+            unregisterReceiver(mUsbReceiver);
+        }
+        super.onDestroy();
+    }
+
     private boolean getFpReader() {
         Log.d(TAG, "getFpReader");
         ReaderCollection readers;
@@ -156,18 +172,21 @@ public class EnrolActivity extends AppCompatActivity {
             return false;
         }
         reader = readers.get(0);
-        Log.d(TAG, "fpr reader found=" + reader.GetDescription().name);
+        readerName = reader.GetDescription().name; // Need the name in other places
+        Log.d(TAG, "fpr reader found=" + readerName);
         return true;
     }
 
     private void openFpReader() {
         Log.d(TAG, "openFpReader");
         try {
+            reader = Globals.getInstance().getReader(readerName, getApplicationContext());
             reader.Open(Reader.Priority.EXCLUSIVE);
             readerDPI = Globals.GetFirstDPI(reader);
             engine = UareUGlobal.GetEngine();
             importer = UareUGlobal.GetImporter();
             readerReady = true;
+            step = Step.PUT_FINGER;
         } catch (Exception e) {
             Log.e(TAG, "Error when open fp reader", e);
             errorMsg = R.string.error_fp_readers_not_found;
@@ -187,31 +206,28 @@ public class EnrolActivity extends AppCompatActivity {
 
                     Log.d(TAG, "CreateEnrollmentFmd");
                     Fmd fmd = engine.CreateEnrollmentFmd(Fmd.Format.ANSI_378_2004, enrollThread);
-                    if(fmd==null){
-                        Log.e(TAG,"capture failed");
+                    if (fmd == null) {
+                        Log.e(TAG, "capture failed");
                         errorMsg = R.string.fp_capture_failed;
                         manageView(Step.ERROR);
                         return;
                     }
-                    if(fmd.getViewCnt()!=1){
-                        Log.e(TAG,"Not one capture in result : " + fmd.getViewCnt());
+                    if (fmd.getViewCnt() != 1) {
+                        Log.e(TAG, "Not one capture in result : " + fmd.getViewCnt());
                         errorMsg = R.string.fp_capture_failed;
                         manageView(Step.ERROR);
                         return;
                     }
 
-                    imageViewFPResult.setImageBitmap(bitmap);
-                    manageView(Step.CAPTURED);
-
-                    Map<String, byte[]> files =  FileUtil.readFiles(EnrolActivity.this);
-                    if(files!=null && !files.isEmpty()){
+                    Map<String, byte[]> files = FileUtil.readFiles(EnrolActivity.this);
+                    if (files != null && !files.isEmpty()) {
                         Log.d(TAG, files.size() + " fingerprint saved to match");
                         Fmd[] fmds = new Fmd[files.size()];
                         String[] phones = new String[files.size()];
-                        int i=0;
-                        for(Map.Entry<String, byte[]> entry : files.entrySet()) {
+                        int i = 0;
+                        for (Map.Entry<String, byte[]> entry : files.entrySet()) {
                             Log.d(TAG, "ImportFmd " + entry.getKey());
-                            Fmd fmdSaved = importer.ImportFmd(entry.getValue(),Fmd.Format.ANSI_378_2004, Fmd.Format.ANSI_378_2004);
+                            Fmd fmdSaved = importer.ImportFmd(entry.getValue(), Fmd.Format.ANSI_378_2004, Fmd.Format.ANSI_378_2004);
                             fmds[i] = fmdSaved;
                             phones[i] = entry.getKey();
                             i++;
@@ -220,18 +236,18 @@ public class EnrolActivity extends AppCompatActivity {
                         Log.d(TAG, "Identify");
                         Engine.Candidate[] candidates = engine.Identify(fmd, 0, fmds, 100000, 1);
 
-                        if (candidates.length != 0){
+                        if (candidates.length != 0) {
                             int idx = candidates[0].fmd_index;
                             String found = phones[idx];
                             Log.d(TAG, "User already registered, phone number=" + found);
                             errorMsg = R.string.fp_already_registered;
                             manageView(Step.ERROR);
                             return;
-                        }else{
+                        } else {
                             Log.d(TAG, "No saved fingerprint matching");
                         }
 
-                    }else{
+                    } else {
                         Log.d(TAG, "No saved FMDs, nothing to compare");
                     }
                     nextActivity(fmd.getData());
@@ -242,6 +258,12 @@ public class EnrolActivity extends AppCompatActivity {
                 }
             }
         }).start();
+    }
+
+    private void updateGUI(Step step) {
+        manageView(step);
+        imageViewFPResult.setImageBitmap(bitmap);
+        imageViewFPResult.invalidate();
     }
 
     private void stopFpReader() {
@@ -264,10 +286,11 @@ public class EnrolActivity extends AppCompatActivity {
         Log.d(TAG, "checkUsbPermission");
         PendingIntent mPermissionIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+        usbReceiverRegistered = true;
         registerReceiver(mUsbReceiver, filter);
 
         try {
-            if (DPFPDDUsbHost.DPFPDDUsbCheckAndRequestPermissions(getApplicationContext(), mPermissionIntent, reader.GetDescription().name)) {
+            if (DPFPDDUsbHost.DPFPDDUsbCheckAndRequestPermissions(getApplicationContext(), mPermissionIntent, readerName)) {
                 openFpReader();
             }
         } catch (DPFPDDUsbException e) {
@@ -309,7 +332,18 @@ public class EnrolActivity extends AppCompatActivity {
                         progressBarMatching.setVisibility(View.INVISIBLE);
 
                         textViewFP.setText(R.string.finger_success);
+
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                textViewFP.setText("Place same finger again!");
+                            }
+                        }, 1000);
+                        break;
                     case MATCHING:
+                        // prevent handler from CAPTURED setting text
+                        handler.removeCallbacksAndMessages(null);
+
                         imageViewFP.setVisibility(View.INVISIBLE);
                         imageViewFPResult.setVisibility(View.INVISIBLE);
                         progressBarMatching.setVisibility(View.VISIBLE);
@@ -339,6 +373,8 @@ public class EnrolActivity extends AppCompatActivity {
         Intent intent = new Intent(EnrolActivity.this, UserInfoActivity.class);
         intent.putExtra(Constants.EXTRA_FMD, fmd);
         startActivity(intent);
+        finish();   // Changed no history flag to false in manifest so that activity doesn't finish
+                    // when reader initialising for the first time.
     }
 
     private enum Step {
@@ -355,7 +391,7 @@ public class EnrolActivity extends AppCompatActivity {
         // callback function is called by dp sdk to retrieve fmds until a null is returned
         @Override
         public Engine.PreEnrollmentFmd GetFmd(Fmd.Format format) {
-            Log.d(TAG, "GetFmd format" + format);
+            Log.d(TAG, "GetFmd format " + format);
             Engine.PreEnrollmentFmd result = null;
 
             Log.d(TAG, "start Capture ...");
@@ -376,6 +412,13 @@ public class EnrolActivity extends AppCompatActivity {
                 Log.d(TAG, "CreateFmd");
                 result.fmd = engine.CreateFmd(captureResult.image, Fmd.Format.ANSI_378_2004);
                 result.view_index = 0;
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateGUI(Step.CAPTURED);
+                    }
+                });
 
             } catch (Exception e) {
                 Log.e(TAG, "Engine error: " + e.toString());
