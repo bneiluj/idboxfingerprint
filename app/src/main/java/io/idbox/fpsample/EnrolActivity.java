@@ -209,7 +209,7 @@ public class EnrolActivity extends AppCompatActivity {
                         return;
                     }
 
-                    imageViewFPResult.setImageBitmap(bitmap);
+
                     manageView(Step.CAPTURED);
 
                     Map<String, byte[]> files =  FileUtil.readFiles(EnrolActivity.this);
@@ -316,6 +316,9 @@ public class EnrolActivity extends AppCompatActivity {
                         break;
                     case CAPTURED:
                         imageViewFP.setVisibility(View.INVISIBLE);
+                        if(bitmap!= null) {
+                            imageViewFPResult.setImageBitmap(bitmap);
+                        }
                         imageViewFPResult.setVisibility(View.VISIBLE);
                         progressBarMatching.setVisibility(View.INVISIBLE);
 
